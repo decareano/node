@@ -49,11 +49,12 @@
 
 const common = require('../common');
 const assert = require('assert');
+const stream = require('stream');
 
 const child_process = require('child_process');
 const fs = require('fs');
 const net = require('net');
-var netBinding = process.binding('net');
+//var netBinding = process.binding('net');
 const path = require('path');
 
 var DATA = {
@@ -82,7 +83,13 @@ var logChild = function(d) {
 // We establish a listener on the read end of the pipe so that we can
 // validate any data sent back by the child. We send the write end of the
 // pipe to the child and close it off in our process.
-var pipeFDs = netBinding.pipe();
+var pipeFDs = [];
+pipeFDs.push(new stream.Readable());
+pipeFDs.push(new stream.Writable());
+pipeFDs[0].pipe(pipeFDs[1]);
+
+
+
 assert.strictEqual(pipeFDs.length, 2);
 
 var seenOrdinals = [];
@@ -116,10 +123,10 @@ var srv = net.createServer(function(s) {
 
   s.write(str, 'utf8', pipeFDs[1]);
   if (s.write(buf, pipeFDs[1])) {
-    netBinding.close(pipeFDs[1]);
+    //netBinding.close(pipeFDs[1]);
   } else {
     s.on('drain', function() {
-      netBinding.close(pipeFDs[1]);
+      //netBinding.close(pipeFDs[1]);
     });
   }
 });
