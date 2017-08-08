@@ -137,6 +137,7 @@ function makeReq(path, port, error, host, ca) {
       options.agent = agent0;
     }
   }
+  console.log('hi');
 
   if (host) {
     options.headers = { host: host };
@@ -207,6 +208,8 @@ function allListening() {
           'UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'agent1', ca1);
 
 }
+
+
 
 process.on('exit', () => {
   assert.strictEqual(server1.requests.length, server1.expectCount);
