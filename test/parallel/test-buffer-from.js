@@ -25,7 +25,7 @@ class MyPrimitive {
 //Buffer.alloc('hello');
 class MyBadPrimitive {
   [Symbol.toPrimitive]() {
-    return 1;
+    return null;
   }
 }
 
@@ -33,6 +33,10 @@ assert.deepStrictEqual(Buffer.from(new String(checkString)), check);
 
 assert.deepStrictEqual(Buffer.from(new MyString()), check);
 assert.deepStrictEqual(Buffer.from(new MyPrimitive()), check);
+assert.deepStrictEqual(Buffer.from(new MyBadPrimitive()), check);
+console.dir(new MyBadPrimitive());
+check.toString('utf-8');
+
 assert.deepStrictEqual(Buffer.from(
                   runInNewContext('new String(checkString)', {checkString})),
                 check);
@@ -40,10 +44,15 @@ assert.deepStrictEqual(Buffer.from(
 [
   {},
   new Boolean(true),
-  { valueOf() { return null; } },
+  { valueOf() { return null; } },  
+  { valueOf: function () { return null }},
+  //Object.prototype.valueOf = function () { return null },  //not good practice
+  new Object({valueOf: function () { return null; }}),
+  console.log(Object),
+  
   { valueOf() { return undefined; } },
-  { valueOf: null },
-  Object.create(null)
+  { valueOf: null },   //object.valueOf = null...this is not an object
+  Object.create(null) //build in syntax 
 ].forEach((input) => {
   const err = common.expectsError({
     code: 'ERR_INVALID_ARG_TYPE',
