@@ -7,8 +7,13 @@ const { runInNewContext } = require('vm');
 const assert = require('assert');
 
 const checkString = 'test';
+console.log(checkString);
+const checkString1 = null;
+
 
 const check = Buffer.from(checkString);
+const check1 = Buffer.from(checkString1);
+
 
 class MyString extends String {
   constructor() {
@@ -22,20 +27,26 @@ class MyPrimitive {
     
   }
 }
+
+console.log(checkString);
 //Buffer.alloc('hello');
 class MyBadPrimitive {
   [Symbol.toPrimitive]() {
     return null;
+
   }
 }
+console.log(MyBadPrimitive)
+console.dir(new MyBadPrimitive());
+
+
 
 assert.deepStrictEqual(Buffer.from(new String(checkString)), check);
 
 assert.deepStrictEqual(Buffer.from(new MyString()), check);
 assert.deepStrictEqual(Buffer.from(new MyPrimitive()), check);
-assert.deepStrictEqual(Buffer.from(new MyBadPrimitive()), check);
-console.dir(new MyBadPrimitive());
-check.toString('utf-8');
+assert.deepStrictEqual(Buffer.from(new MyBadPrimitive()), check1);
+
 
 assert.deepStrictEqual(Buffer.from(
                   runInNewContext('new String(checkString)', {checkString})),
@@ -45,10 +56,10 @@ assert.deepStrictEqual(Buffer.from(
   {},
   new Boolean(true),
   { valueOf() { return null; } },  
-  { valueOf: function () { return null }},
+  //{ valueOf: function () { return null }},
   //Object.prototype.valueOf = function () { return null },  //not good practice
-  new Object({valueOf: function () { return null; }}),
-  console.log(Object),
+  //new Object({valueOf: function () { return null; }}),
+  //console.log(Object),
   
   { valueOf() { return undefined; } },
   { valueOf: null },   //object.valueOf = null...this is not an object
@@ -65,7 +76,7 @@ assert.deepStrictEqual(Buffer.from(
 
 [
   new Number(true),
-  new MyBadPrimitive()
+  new MyBadPrimitive(true)
 ].forEach((input) => {
   const errMsg = common.expectsError({
     code: 'ERR_INVALID_ARG_TYPE',
