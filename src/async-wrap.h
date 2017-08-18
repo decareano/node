@@ -35,10 +35,13 @@ namespace node {
 
 #define NODE_ASYNC_NON_CRYPTO_PROVIDER_TYPES(V)                               \
   V(NONE)                                                                     \
+  V(DNSCHANNEL)                                                               \
   V(FSEVENTWRAP)                                                              \
   V(FSREQWRAP)                                                                \
   V(GETADDRINFOREQWRAP)                                                       \
   V(GETNAMEINFOREQWRAP)                                                       \
+  V(HTTP2SESSION)                                                             \
+  V(HTTP2SESSIONSHUTDOWNWRAP)                                                 \
   V(HTTPPARSER)                                                               \
   V(JSSTREAM)                                                                 \
   V(PIPECONNECTWRAP)                                                          \
@@ -108,8 +111,8 @@ class AsyncWrap : public BaseObject {
                             double id,
                             double trigger_id);
 
-  static bool EmitBefore(Environment* env, double id);
-  static bool EmitAfter(Environment* env, double id);
+  static void EmitBefore(Environment* env, double id);
+  static void EmitAfter(Environment* env, double id);
 
   inline ProviderType provider_type() const;
 
@@ -120,16 +123,16 @@ class AsyncWrap : public BaseObject {
   void AsyncReset(bool silent = false);
 
   // Only call these within a valid HandleScope.
-  // TODO(trevnorris): These should return a MaybeLocal.
-  v8::Local<v8::Value> MakeCallback(const v8::Local<v8::Function> cb,
-                                    int argc,
-                                    v8::Local<v8::Value>* argv);
-  inline v8::Local<v8::Value> MakeCallback(const v8::Local<v8::String> symbol,
-                                           int argc,
-                                           v8::Local<v8::Value>* argv);
-  inline v8::Local<v8::Value> MakeCallback(uint32_t index,
-                                           int argc,
-                                           v8::Local<v8::Value>* argv);
+  v8::MaybeLocal<v8::Value> MakeCallback(const v8::Local<v8::Function> cb,
+                                         int argc,
+                                         v8::Local<v8::Value>* argv);
+  inline v8::MaybeLocal<v8::Value> MakeCallback(
+      const v8::Local<v8::String> symbol,
+      int argc,
+      v8::Local<v8::Value>* argv);
+  inline v8::MaybeLocal<v8::Value> MakeCallback(uint32_t index,
+                                                int argc,
+                                                v8::Local<v8::Value>* argv);
 
   virtual size_t self_size() const = 0;
 
@@ -143,6 +146,7 @@ class AsyncWrap : public BaseObject {
 
 void LoadAsyncWrapperInfo(Environment* env);
 
+// Return value is an indicator whether the domain was disposed.
 bool DomainEnter(Environment* env, v8::Local<v8::Object> object);
 bool DomainExit(Environment* env, v8::Local<v8::Object> object);
 

@@ -48,9 +48,11 @@ assert.deepStrictEqual(Buffer.from(new MyPrimitive()), check);
 assert.deepStrictEqual(Buffer.from(new MyBadPrimitive()), check1);
 
 
+
 assert.deepStrictEqual(Buffer.from(
                   runInNewContext('new String(checkString)', {checkString})),
                 check);
+
 
 [
   {},
