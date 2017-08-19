@@ -76,20 +76,7 @@ assert.deepStrictEqual(Buffer.from(
   throws(() => Buffer.from(input), err);
 });
 
-<<<<<<< HEAD
-[
-  new Number(true),
-  new MyBadPrimitive(true)
-].forEach((input) => {
-  const errMsg = common.expectsError({
-    code: 'ERR_INVALID_ARG_TYPE',
-    type: TypeError,
-    message: 'The "value" argument must not be of type number. ' +
-             'Received type number'
-  });
-  throws(() => Buffer.from(input), errMsg);
-});
-=======
+
 // [
 //   new Number(true),
 //   new MyBadPrimitive()
@@ -102,4 +89,4 @@ assert.deepStrictEqual(Buffer.from(
 //   });
 //   throws(() => Buffer.from(input), errMsg);
 // });
->>>>>>> 7487035f3dbc74354211e7fd02305a6d36ba059e
+
