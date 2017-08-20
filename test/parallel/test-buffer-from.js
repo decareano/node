@@ -32,11 +32,13 @@ console.log(checkString);
 //Buffer.alloc('hello');
 class MyBadPrimitive {
   [Symbol.toPrimitive]() {
-    return null;
+    return checkString1;
+
 
   }
 }
 console.log(MyBadPrimitive)
+
 console.dir(new MyBadPrimitive());
 
 
@@ -77,16 +79,16 @@ assert.deepStrictEqual(Buffer.from(
 });
 
 
-// [
-//   new Number(true),
-//   new MyBadPrimitive()
-// ].forEach((input) => {
-//   const errMsg = common.expectsError({
-//     code: 'ERR_INVALID_ARG_TYPE',
-//     type: TypeError,
-//     message: 'The "value" argument must not be of type number. ' +
-//              'Received type number'
-//   });
-//   throws(() => Buffer.from(input), errMsg);
-// });
+[
+  new Number(true),
+  new MyBadPrimitive()
+].forEach((input) => {
+  const errMsg = common.expectsError({
+    code: 'ERR_INVALID_ARG_TYPE',
+    type: TypeError,
+    message: 'The "value" argument must not be of type number. ' +
+             'Received type number'
+  });
+  throws(() => Buffer.from(input), errMsg);
+});
 

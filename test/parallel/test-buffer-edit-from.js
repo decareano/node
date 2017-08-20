@@ -1,54 +1,54 @@
-'use strict';
+// 'use strict';
 
-const common = require('../common');
-const { deepStrictEqual, throws } = require('assert');
-const { Buffer } = require('buffer');
-const { runInNewContext } = require('vm');
-const assert = require('assert');
+// const common = require('../common');
+// const { deepStrictEqual, throws } = require('assert');
+// const { Buffer } = require('buffer');
+// const { runInNewContext } = require('vm');
+// const assert = require('assert');
 
-const checkString = 'test';
-console.log(checkString);
+// const checkString = 'test';
+// console.log(checkString);
 
-const check = Buffer.from(checkString);
-console.log(check.toString());
+// const check = Buffer.from(checkString);
+// console.log(check.toString());
 
-class MyString extends String {
-  constructor() {
-    super(checkString);
+// class MyString extends String {
+//   constructor() {
+//     super(checkString);
 
-  }
+//   }
 
-}
+// }
 
-console.log(MyString);
+// console.log(MyString);
 
-class MyPrimitive {
-  [Symbol.toPrimitive]() {
-    return checkString;
+// class MyPrimitive {
+//   [Symbol.toPrimitive]() {
+//     return checkString;
 
     
-  }
-}
-console.dir(new MyPrimitive());
+//   }
+// }
+// console.dir(new MyPrimitive());
 
-class MyBadPrimitive {
-  [Symbol.toPrimitive]() {  //should always throw cuz it returns a number
-    return 1;
-  }
-}
-console.dir(new MyBadPrimitive());
-check.toString('utf-8');
+// class MyBadPrimitive {
+//   [Symbol.toPrimitive]() {  //should always throw cuz it returns a number
+//     return 1;
+//   }
+// }
+// console.dir(new MyBadPrimitive());
+// check.toString('utf-8');
 
 
+// // assert.deepStrictEqual(Buffer.from(new String(checkString)), check);
+// // // console.log(checkString);
 // assert.deepStrictEqual(Buffer.from(new String(checkString)), check);
-// // console.log(checkString);
-assert.deepStrictEqual(Buffer.from(new String(checkString)), check);
-console.log(checkString);
-assert.deepStrictEqual(Buffer.from(new MyString()), check);
-console.dir(new MyString());
-console.log(check);
-assert.deepStrictEqual(Buffer.from(new MyPrimitive()), check);
-console.log(check);
+// console.log(checkString);
+// assert.deepStrictEqual(Buffer.from(new MyString()), check);
+// console.dir(new MyString());
+// console.log(check);
+// assert.deepStrictEqual(Buffer.from(new MyPrimitive()), check);
+// console.log(check);
 
 //console.log(check);
 //console.dir(new MyBadPrimitive);
