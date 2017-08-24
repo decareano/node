@@ -31,6 +31,7 @@
 #undef MAP_TYPE
 
 #include "src/base/macros.h"
+#include "src/base/platform/platform-posix-time.h"
 #include "src/base/platform/platform-posix.h"
 #include "src/base/platform/platform.h"
 
@@ -84,13 +85,14 @@ bool OS::ArmUsingHardFloat() {
 
 #endif  // __arm__
 
-TimezoneCache* OS::CreateTimezoneCache() { return new PosixTimezoneCache(); }
+TimezoneCache* OS::CreateTimezoneCache() {
+  return new PosixDefaultTimezoneCache();
+}
 
-void* OS::Allocate(const size_t requested,
-                   size_t* allocated,
-                   bool is_executable) {
+void* OS::Allocate(const size_t requested, size_t* allocated,
+                   OS::MemoryPermission access) {
   const size_t msize = RoundUp(requested, AllocateAlignment());
-  int prot = PROT_READ | PROT_WRITE | (is_executable ? PROT_EXEC : 0);
+  int prot = GetProtectionFromMemoryPermission(access);
   void* addr = OS::GetRandomMmapAddr();
   void* mbase = mmap(addr, msize, prot, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   if (mbase == MAP_FAILED) return NULL;
