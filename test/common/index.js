@@ -262,7 +262,7 @@ Object.defineProperty(exports, 'hasFipsCrypto', {
 
 {
   const iFaces = os.networkInterfaces();
-  const re = /lo/;
+  const re = exports.isWindows ? /Loopback Pseudo-Interface/ : /lo/;
   exports.hasIPv6 = Object.keys(iFaces).some(function(name) {
     return re.test(name) && iFaces[name].some(function(info) {
       return info.family === 'IPv6';
@@ -809,7 +809,12 @@ function hijackStdWritable(name, listener) {
 
   stream.writeTimes = 0;
   stream.write = function(data, callback) {
-    listener(data);
+    try {
+      listener(data);
+    } catch (e) {
+      process.nextTick(() => { throw e; });
+    }
+
     _write.call(stream, data, callback);
     stream.writeTimes++;
   };
