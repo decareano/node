@@ -8,11 +8,11 @@ const assert = require('assert');
 
 const checkString = 'test';
 console.log(checkString);
-const checkString1 = null;
-
+//const checkString1 = null;
+//console.log(checkString1);
 
 const check = Buffer.from(checkString);
-const check1 = Buffer.from(checkString1);
+//const check1 = Buffer.from('');
 
 
 class MyString extends String {
@@ -28,18 +28,18 @@ class MyPrimitive {
   }
 }
 
-console.log(checkString);
-//Buffer.alloc('hello');
+// console.log(checkString);
+// //Buffer.alloc('hello');
 class MyBadPrimitive {
   [Symbol.toPrimitive]() {
-    return checkString1;
+    return 1;
 
 
   }
 }
-console.log(MyBadPrimitive)
+// console.log(MyBadPrimitive)
 
-console.dir(new MyBadPrimitive());
+// console.dir(new MyBadPrimitive());
 
 
 
@@ -47,7 +47,7 @@ assert.deepStrictEqual(Buffer.from(new String(checkString)), check);
 
 assert.deepStrictEqual(Buffer.from(new MyString()), check);
 assert.deepStrictEqual(Buffer.from(new MyPrimitive()), check);
-assert.deepStrictEqual(Buffer.from(new MyBadPrimitive()), check1);
+//assert.deepStrictEqual(Buffer.from(new MyBadPrimitive()), check);
 
 
 
