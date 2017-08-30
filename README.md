@@ -35,7 +35,7 @@ If you need help using or installing Node.js, please use the
 * [Building Node.js](#building-nodejs)
   * [Security](#security)
   * [Current Project Team Members](#current-project-team-members)
-    * [CTC (Core Technical Committee)](#ctc-core-technical-committee)
+    * [TSC (Technical Steering Committee)](#tsc-technical-steering-committee)
     * [Collaborators](#collaborators)
     * [Release Team](#release-team)
 
@@ -55,9 +55,9 @@ If you need help using or installing Node.js, please use the
 channel.
 
 _Please note that unofficial resources are neither managed by (nor necessarily
-endorsed by) the Node.js TSC/CTC. Specifically, such resources are not
+endorsed by) the Node.js TSC. Specifically, such resources are not
 currently covered by the [Node.js Moderation Policy][] and the selection and
-actions of resource operators/moderators are not subject to TSC/CTC oversight._
+actions of resource operators/moderators are not subject to TSC oversight._
 
 ## Release Types
 
@@ -81,11 +81,12 @@ The Node.js project maintains multiple types of releases:
   ordered codenames, beginning with v4 Argon. LTS releases are less frequent
   and will attempt to maintain consistent major and minor version numbers,
   only incrementing patch version numbers. There are no breaking changes or
-  feature additions, except in some special circumstances. More information
-  can be found in the [LTS README](https://github.com/nodejs/LTS/).
+  feature additions, except in some special circumstances.
 * **Nightly**: Versions of code in this repository on the current Current
   branch, automatically built every 24-hours where changes exist. Use with
   caution.
+
+More information can be found in the [LTS README](https://github.com/nodejs/LTS/).
 
 ## Download
 
@@ -175,11 +176,11 @@ handling your report.
 ## Current Project Team Members
 
 The Node.js project team comprises a group of core collaborators and a sub-group
-that forms the _Core Technical Committee_ (CTC) which governs the project. For
-more information about the governance of the Node.js project, see
+that forms the _Technical Steering Committee_ (TSC) which governs the project.
+For more information about the governance of the Node.js project, see
 [GOVERNANCE.md](./GOVERNANCE.md).
 
-### CTC (Core Technical Committee)
+### TSC (Technical Steering Committee)
 
 * [addaleax](https://github.com/addaleax) -
 **Anna Henningsen** &lt;anna@addaleax.net&gt; (she/her)
@@ -199,14 +200,14 @@ more information about the governance of the Node.js project, see
 **Fedor Indutny** &lt;fedor.indutny@gmail.com&gt;
 * [jasnell](https://github.com/jasnell) -
 **James M Snell** &lt;jasnell@gmail.com&gt; (he/him)
+* [joshgav](https://github.com/joshgav) -
+**Josh Gavant** &lt;josh.gavant@outlook.com&gt;
 * [joyeecheung](https://github.com/joyeecheung) -
 **Joyee Cheung** &lt;joyeec9h3@gmail.com&gt; (she/her)
 * [mcollina](https://github.com/mcollina) -
 **Matteo Collina** &lt;matteo.collina@gmail.com&gt; (he/him)
 * [mhdawson](https://github.com/mhdawson) -
 **Michael Dawson** &lt;michael_dawson@ca.ibm.com&gt; (he/him)
-* [misterdjules](https://github.com/misterdjules) -
-**Julien Gilli** &lt;jgilli@nodejs.org&gt;
 * [mscdex](https://github.com/mscdex) -
 **Brian White** &lt;mscdex@mscdex.net&gt;
 * [MylesBorins](https://github.com/MylesBorins) -
@@ -226,7 +227,7 @@ more information about the governance of the Node.js project, see
 * [Trott](https://github.com/Trott) -
 **Rich Trott** &lt;rtrott@gmail.com&gt; (he/him)
 
-### CTC Emeriti
+### TSC Emeriti
 
 * [chrisdickinson](https://github.com/chrisdickinson) -
 **Chris Dickinson** &lt;christopher.s.dickinson@gmail.com&gt;
@@ -236,6 +237,8 @@ more information about the governance of the Node.js project, see
 **Alexis Campailla** &lt;orangemocha@nodejs.org&gt;
 * [piscisaureus](https://github.com/piscisaureus) -
 **Bert Belder** &lt;bertbelder@gmail.com&gt;
+* [nebrius](https://github.com/nebrius) -
+**Bryan Hughes** &lt;bryan@nebri.us&gt;
 
 ### Collaborators
 
@@ -263,6 +266,8 @@ more information about the governance of the Node.js project, see
 **Ben Noordhuis** &lt;info@bnoordhuis.nl&gt;
 * [brendanashworth](https://github.com/brendanashworth) -
 **Brendan Ashworth** &lt;brendan.ashworth@me.com&gt;
+* [BridgeAR](https://github.com/BridgeAR) -
+**Ruben Bridgewater** &lt;ruben@bridgewater.de&gt;
 * [bzoz](https://github.com/bzoz) -
 **Bartosz Sosnowski** &lt;bartosz@janeasystems.com&gt;
 * [calvinmetcalf](https://github.com/calvinmetcalf) -
@@ -295,6 +300,8 @@ more information about the governance of the Node.js project, see
 **Daniel Wang** &lt;wangyang0123@gmail.com&gt;
 * [Fishrock123](https://github.com/Fishrock123) -
 **Jeremiah Senkpiel** &lt;fishrock123@rocketmail.com&gt;
+* [gabrielschulhof](https://github.com/gabrielschulhof) -
+**Gabriel Schulhof** &lt;gabriel.schulhof@intel.com&gt;
 * [geek](https://github.com/geek) -
 **Wyatt Preul** &lt;wpreul@gmail.com&gt;
 * [gibfahn](https://github.com/gibfahn) -
@@ -447,6 +454,8 @@ more information about the governance of the Node.js project, see
 **Daijiro Wachi** &lt;daijiro.wachi@gmail.com&gt; (he/him)
 * [whitlockjc](https://github.com/whitlockjc) -
 **Jeremy Whitlock** &lt;jwhitlock@apache.org&gt;
+* [XadillaX](https://github.com/XadillaX) -
+**Khaidi Chu** &lt;i@2333.moe&gt; (he/him)
 * [yorkie](https://github.com/yorkie) -
 **Yorkie Liu** &lt;yorkiefixer@gmail.com&gt;
 * [yosuke-furukawa](https://github.com/yosuke-furukawa) -
@@ -503,7 +512,7 @@ Previous releases may also have been signed with one of the following GPG keys:
 ### Working Groups
 
 Information on the current Node.js Working Groups can be found in the
-[CTC repository](https://github.com/nodejs/CTC/blob/master/WORKING_GROUPS.md).
+[TSC repository](https://github.com/nodejs/TSC/blob/master/WORKING_GROUPS.md).
 
 [npm]: https://www.npmjs.com
 [Website]: https://nodejs.org/en/

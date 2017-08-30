@@ -25,18 +25,19 @@ const path = require('path');
 const fs = require('fs');
 const assert = require('assert');
 const os = require('os');
-const child_process = require('child_process');
+const { exec, execSync, spawn, spawnSync } = require('child_process');
 const stream = require('stream');
 const util = require('util');
 const Timer = process.binding('timer_wrap').Timer;
-const execSync = require('child_process').execSync;
+const { fixturesDir } = require('./fixtures');
 
 const testRoot = process.env.NODE_TEST_DIR ?
   fs.realpathSync(process.env.NODE_TEST_DIR) : path.resolve(__dirname, '..');
 
 const noop = () => {};
 
-exports.fixturesDir = path.join(__dirname, '..', 'fixtures');
+exports.fixturesDir = fixturesDir;
+
 exports.tmpDirName = 'tmp';
 // PORT should match the definition in test/testpy/__init__.py.
 exports.PORT = +process.env.NODE_COMMON_PORT || 12346;
@@ -186,7 +187,7 @@ Object.defineProperty(exports, 'inFreeBSDJail', {
     if (inFreeBSDJail !== null) return inFreeBSDJail;
 
     if (exports.isFreeBSD &&
-      child_process.execSync('sysctl -n security.jail.jailed').toString() ===
+      execSync('sysctl -n security.jail.jailed').toString() ===
       '1\n') {
       inFreeBSDJail = true;
     } else {
@@ -220,7 +221,7 @@ Object.defineProperty(exports, 'localhostIPv4', {
 });
 
 // opensslCli defined lazily to reduce overhead of spawnSync
-Object.defineProperty(exports, 'opensslCli', {get: function() {
+Object.defineProperty(exports, 'opensslCli', { get: function() {
   if (opensslCli !== null) return opensslCli;
 
   if (process.config.variables.node_shared_openssl) {
@@ -233,13 +234,13 @@ Object.defineProperty(exports, 'opensslCli', {get: function() {
 
   if (exports.isWindows) opensslCli += '.exe';
 
-  const opensslCmd = child_process.spawnSync(opensslCli, ['version']);
+  const opensslCmd = spawnSync(opensslCli, ['version']);
   if (opensslCmd.status !== 0 || opensslCmd.error !== undefined) {
     // openssl command cannot be executed
     opensslCli = false;
   }
   return opensslCli;
-}, enumerable: true});
+}, enumerable: true });
 
 Object.defineProperty(exports, 'hasCrypto', {
   get: function() {
@@ -261,7 +262,7 @@ Object.defineProperty(exports, 'hasFipsCrypto', {
 
 {
   const iFaces = os.networkInterfaces();
-  const re = /lo/;
+  const re = exports.isWindows ? /Loopback Pseudo-Interface/ : /lo/;
   exports.hasIPv6 = Object.keys(iFaces).some(function(name) {
     return re.test(name) && iFaces[name].some(function(info) {
       return info.family === 'IPv6';
@@ -283,7 +284,7 @@ exports.childShouldThrowAndAbort = function() {
   }
   testCmd += `"${process.argv[0]}" --abort-on-uncaught-exception `;
   testCmd += `"${process.argv[1]}" child`;
-  const child = child_process.exec(testCmd);
+  const child = exec(testCmd);
   child.on('exit', function onExit(exitCode, signal) {
     const errMsg = 'Test should have aborted ' +
                    `but instead exited with exit code ${exitCode}` +
@@ -303,8 +304,6 @@ exports.ddCommand = function(filename, kilobytes) {
 
 
 exports.spawnPwd = function(options) {
-  const spawn = require('child_process').spawn;
-
   if (exports.isWindows) {
     return spawn('cmd.exe', ['/d', '/c', 'cd'], options);
   } else {
@@ -314,8 +313,6 @@ exports.spawnPwd = function(options) {
 
 
 exports.spawnSyncPwd = function(options) {
-  const spawnSync = require('child_process').spawnSync;
-
   if (exports.isWindows) {
     return spawnSync('cmd.exe', ['/d', '/c', 'cd'], options);
   } else {
@@ -608,10 +605,10 @@ exports.nodeProcessAborted = function nodeProcessAborted(exitCode, signal) {
   // On Windows, 'aborts' are of 2 types, depending on the context:
   // (i) Forced access violation, if --abort-on-uncaught-exception is on
   // which corresponds to exit code 3221225477 (0xC0000005)
-  // (ii) raise(SIGABRT) or abort(), which lands up in CRT library calls
-  // which corresponds to exit code 3.
+  // (ii) Otherwise, _exit(134) which is called in place of abort() due to
+  // raising SIGABRT exiting with ambiguous exit code '3' by default
   if (exports.isWindows)
-    expectedExitCodes = [3221225477, 3];
+    expectedExitCodes = [0xC0000005, 134];
 
   // When using --abort-on-uncaught-exception, V8 will use
   // base::OS::Abort to terminate the process.
@@ -696,24 +693,43 @@ Object.defineProperty(exports, 'hasSmallICU', {
 });
 
 // Useful for testing expected internal/error objects
-exports.expectsError = function expectsError(fn, options, exact) {
+exports.expectsError = function expectsError(fn, settings, exact) {
   if (typeof fn !== 'function') {
-    exact = options;
-    options = fn;
+    exact = settings;
+    settings = fn;
     fn = undefined;
   }
-  const { code, type, message } = options;
   const innerFn = exports.mustCall(function(error) {
-    assert.strictEqual(error.code, code);
-    if (type !== undefined) {
+    assert.strictEqual(error.code, settings.code);
+    if ('type' in settings) {
+      const type = settings.type;
+      if (type !== Error && !Error.isPrototypeOf(type)) {
+        throw new TypeError('`settings.type` must inherit from `Error`');
+      }
       assert(error instanceof type,
-             `${error} is not the expected type ${type}`);
+             `${error.name} is not instance of ${type.name}`);
     }
-    if (message instanceof RegExp) {
-      assert(message.test(error.message),
-             `${error.message} does not match ${message}`);
-    } else if (typeof message === 'string') {
-      assert.strictEqual(error.message, message);
+    if ('message' in settings) {
+      const message = settings.message;
+      if (typeof message === 'string') {
+        assert.strictEqual(error.message, message);
+      } else {
+        assert(message.test(error.message),
+               `${error.message} does not match ${message}`);
+      }
+    }
+    if ('name' in settings) {
+      assert.strictEqual(error.name, settings.name);
+    }
+    if (error.constructor.name === 'AssertionError') {
+      ['generatedMessage', 'actual', 'expected', 'operator'].forEach((key) => {
+        if (key in settings) {
+          const actual = error[key];
+          const expected = settings[key];
+          assert.strictEqual(actual, expected,
+                             `${key}: expected ${expected}, not ${actual}`);
+        }
+      });
     }
     return true;
   }, exact);
@@ -727,6 +743,12 @@ exports.expectsError = function expectsError(fn, options, exact) {
 exports.skipIfInspectorDisabled = function skipIfInspectorDisabled() {
   if (process.config.variables.v8_enable_inspector === 0) {
     exports.skip('V8 inspector is disabled');
+  }
+};
+
+exports.skipIf32Bits = function skipIf32Bits() {
+  if (process.binding('config').bits < 64) {
+    exports.skip('The tested feature is not available in 32bit builds');
   }
 };
 
@@ -770,7 +792,7 @@ exports.getTTYfd = function getTTYfd() {
   else if (!tty.isatty(tty_fd)) tty_fd++;
   else {
     try {
-      tty_fd = require('fs').openSync('/dev/tty');
+      tty_fd = fs.openSync('/dev/tty');
     } catch (e) {
       // There aren't any tty fd's available to use.
       return -1;
@@ -787,7 +809,12 @@ function hijackStdWritable(name, listener) {
 
   stream.writeTimes = 0;
   stream.write = function(data, callback) {
-    listener(data);
+    try {
+      listener(data);
+    } catch (e) {
+      process.nextTick(() => { throw e; });
+    }
+
     _write.call(stream, data, callback);
     stream.writeTimes++;
   };
@@ -798,7 +825,58 @@ function restoreWritable(name) {
   delete process[name].writeTimes;
 }
 
+function onResolvedOrRejected(promise, callback) {
+  return promise.then((result) => {
+    callback();
+    return result;
+  }, (error) => {
+    callback();
+    throw error;
+  });
+}
+
+function timeoutPromise(error, timeoutMs) {
+  let clearCallback = null;
+  let done = false;
+  const promise = onResolvedOrRejected(new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(error), timeoutMs);
+    clearCallback = () => {
+      if (done)
+        return;
+      clearTimeout(timeout);
+      resolve();
+    };
+  }), () => done = true);
+  promise.clear = clearCallback;
+  return promise;
+}
+
 exports.hijackStdout = hijackStdWritable.bind(null, 'stdout');
 exports.hijackStderr = hijackStdWritable.bind(null, 'stderr');
 exports.restoreStdout = restoreWritable.bind(null, 'stdout');
 exports.restoreStderr = restoreWritable.bind(null, 'stderr');
+
+let fd = 2;
+exports.firstInvalidFD = function firstInvalidFD() {
+  // Get first known bad file descriptor.
+  try {
+    while (fs.fstatSync(++fd));
+  } catch (e) {}
+  return fd;
+};
+
+exports.fires = function fires(promise, error, timeoutMs) {
+  if (!timeoutMs && util.isNumber(error)) {
+    timeoutMs = error;
+    error = null;
+  }
+  if (!error)
+    error = 'timeout';
+  if (!timeoutMs)
+    timeoutMs = 100;
+  const timeout = timeoutPromise(error, timeoutMs);
+  return Promise.race([
+    onResolvedOrRejected(promise, () => timeout.clear()),
+    timeout
+  ]);
+};

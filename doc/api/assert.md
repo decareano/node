@@ -1,5 +1,7 @@
 # Assert
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 The `assert` module provides a simple set of assertion tests that can be used to
@@ -583,7 +585,7 @@ Note that `error` can not be a string. If a string is provided as the second
 argument, then `error` is assumed to be omitted and the string will be used for
 `message` instead. This can lead to easy-to-miss mistakes:
 
-<!-- eslint-disable assert-throws-arguments -->
+<!-- eslint-disable no-restricted-syntax -->
 ```js
 // THIS IS A MISTAKE! DO NOT DO THIS!
 assert.throws(myFunction, 'missing foo', 'did not throw with expected message');

@@ -1,5 +1,7 @@
 # C++ Addons
 
+<!--introduced_in=v0.10.0-->
+
 Node.js Addons are dynamically-linked shared objects, written in C++, that
 can be loaded into Node.js using the [`require()`][require] function, and used
 just as if they were an ordinary Node.js module. They are used primarily to
@@ -1073,7 +1075,6 @@ The following `addon.cc` implements AtExit:
 
 ```cpp
 // addon.cc
-#undef NDEBUG
 #include <assert.h>
 #include <stdlib.h>
 #include <node.h>
@@ -1110,10 +1111,10 @@ static void sanity_check(void*) {
 }
 
 void init(Local<Object> exports) {
-  AtExit(sanity_check);
   AtExit(at_exit_cb2, cookie);
   AtExit(at_exit_cb2, cookie);
   AtExit(at_exit_cb1, exports->GetIsolate());
+  AtExit(sanity_check);
 }
 
 NODE_MODULE(addon, init)
@@ -1125,7 +1126,7 @@ Test in JavaScript by running:
 
 ```js
 // test.js
-const addon = require('./build/Release/addon');
+require('./build/Release/addon');
 ```
 
 [Embedder's Guide]: https://github.com/v8/v8/wiki/Embedder's%20Guide

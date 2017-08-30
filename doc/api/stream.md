@@ -1,5 +1,7 @@
 # Stream
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 A stream is an abstract interface for working with streaming data in Node.js.
@@ -894,7 +896,7 @@ in object mode.
 The optional `size` argument specifies a specific number of bytes to read. If
 `size` bytes are not available to be read, `null` will be returned *unless*
 the stream has ended, in which case all of the data remaining in the internal
-buffer will be returned (*even if it exceeds `size` bytes*).
+buffer will be returned.
 
 If the `size` argument is not specified, all of the data contained in the
 internal buffer will be returned.
@@ -1383,7 +1385,7 @@ resource.
 [`writable._write()`][stream-_write].
 
 *Note*: This function MUST NOT be called by application code directly. It
-should be implemented by child classes, and called only by the internal Writable
+should be implemented by child classes, and called by the internal Writable
 class methods only.
 
 The `callback` method must be called to signal either that the write completed
@@ -1418,7 +1420,7 @@ user programs.
   argument) to be invoked when processing is complete for the supplied chunks.
 
 *Note*: This function MUST NOT be called by application code directly. It
-should be implemented by child classes, and called only by the internal Writable
+should be implemented by child classes, and called by the internal Writable
 class methods only.
 
 The `writable._writev()` method may be implemented in addition to
@@ -1445,9 +1447,9 @@ added: v8.0.0
 -->
 
 * `callback` {Function} Call this function (optionally with an error
-  argument) when you are done writing any remaining data.
+  argument) when finished writing any remaining data.
 
-Note: `_final()` **must not** be called directly.  It MAY be implemented
+The `_final()` method **must not** be called directly. It may be implemented
 by child classes, and if so, will be called by the internal Writable
 class methods only.
 
@@ -1573,7 +1575,7 @@ const myReadable = new Readable({
 * `size` {number} Number of bytes to read asynchronously
 
 *Note*: This function MUST NOT be called by application code directly. It
-should be implemented by child classes, and called only by the internal Readable
+should be implemented by child classes, and called by the internal Readable
 class methods only.
 
 All Readable stream implementations must provide an implementation of the
@@ -1740,6 +1742,13 @@ constructor and implement *both* the `readable._read()` and
 `writable._write()` methods.
 
 #### new stream.Duplex(options)
+<!-- YAML
+changes:
+  - version: v8.4.0
+    pr-url: https://github.com/nodejs/node/pull/14636
+    description: The `readableHighWaterMark` and `writableHighWaterMark` options
+                 are supported now.
+-->
 
 * `options` {Object} Passed to both Writable and Readable
   constructors. Also has the following fields:
@@ -1752,6 +1761,10 @@ constructor and implement *both* the `readable._read()` and
   * `writableObjectMode` {boolean} Defaults to `false`. Sets `objectMode`
     for writable side of the stream. Has no effect if `objectMode`
     is `true`.
+  * `readableHighWaterMark` {number} Sets `highWaterMark` for the readable side
+    of the stream. Has no effect if `highWaterMark` is provided.
+  * `writableHighWaterMark` {number} Sets `highWaterMark` for the writable side
+    of the stream. Has no effect if `highWaterMark` is provided.
 
 For example:
 
@@ -1963,7 +1976,7 @@ after all data has been output, which occurs after the callback in
   argument and data) to be called when remaining data has been flushed.
 
 *Note*: This function MUST NOT be called by application code directly. It
-should be implemented by child classes, and called only by the internal Readable
+should be implemented by child classes, and called by the internal Readable
 class methods only.
 
 In some cases, a transform operation may need to emit an additional bit of
@@ -1998,7 +2011,7 @@ user programs.
   processed.
 
 *Note*: This function MUST NOT be called by application code directly. It
-should be implemented by child classes, and called only by the internal Readable
+should be implemented by child classes, and called by the internal Readable
 class methods only.
 
 All Transform stream implementations must provide a `_transform()`
@@ -2032,6 +2045,10 @@ transform.prototype._transform = function(data, encoding, callback) {
 The `transform._transform()` method is prefixed with an underscore because it
 is internal to the class that defines it, and should never be called directly by
 user programs.
+
+`transform._transform()` is never called in  parallel; streams implement a
+queue mechanism, and to receive the next chunk, `callback` must be
+called, either synchronously or asynchronously.
 
 #### Class: stream.PassThrough
 
