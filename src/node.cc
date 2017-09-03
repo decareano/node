@@ -23,10 +23,12 @@
 #include "node_buffer.h"
 #include "node_constants.h"
 #include "node_javascript.h"
+#include "node_platform.h"
 #include "node_version.h"
 #include "node_internals.h"
 #include "node_revert.h"
 #include "node_debug_options.h"
+#include "node_perf.h"
 
 #if defined HAVE_PERFCTR
 #include "node_counters.h"
@@ -59,6 +61,7 @@
 #include "env-inl.h"
 #include "handle_wrap.h"
 #include "http_parser.h"
+#include "nghttp2/nghttp2ver.h"
 #include "req-wrap.h"
 #include "req-wrap-inl.h"
 #include "string_bytes.h"
@@ -182,6 +185,9 @@ static bool trace_enabled = false;
 static std::string trace_enabled_categories;  // NOLINT(runtime/string)
 static bool abort_on_uncaught_exception = false;
 
+// Bit flag used to track security reverts (see node_revert.h)
+unsigned int reverted = 0;
+
 #if defined(NODE_HAVE_I18N_SUPPORT)
 // Path to ICU data (for i18n / Intl)
 std::string icu_data_dir;  // NOLINT(runtime/string)
@@ -232,6 +238,9 @@ std::string config_warning_file;  // NOLINT(runtime/string)
 // that is used by lib/internal/bootstrap_node.js
 bool config_expose_internals = false;
 
+// Set in node.cc by ParseArgs when --expose-http2 is used.
+bool config_expose_http2 = false;
+
 bool v8_initialized = false;
 
 bool linux_at_secure = false;
@@ -246,22 +255,26 @@ node::DebugOptions debug_options;
 
 static struct {
 #if NODE_USE_V8_PLATFORM
-  void Initialize(int thread_pool_size) {
-    platform_ = v8::platform::CreateDefaultPlatform(
-        thread_pool_size,
-        v8::platform::IdleTaskSupport::kDisabled,
-        v8::platform::InProcessStackDumping::kDisabled);
+  void Initialize(int thread_pool_size, uv_loop_t* loop) {
+    tracing_agent_ =
+        trace_enabled ? new tracing::Agent() : nullptr;
+    platform_ = new NodePlatform(thread_pool_size, loop,
+        trace_enabled ? tracing_agent_->GetTracingController() : nullptr);
     V8::InitializePlatform(platform_);
-    tracing::TraceEventHelper::SetCurrentPlatform(platform_);
-  }
-
-  void PumpMessageLoop(Isolate* isolate) {
-    v8::platform::PumpMessageLoop(platform_, isolate);
+    tracing::TraceEventHelper::SetTracingController(
+        trace_enabled ? tracing_agent_->GetTracingController() : nullptr);
   }
 
   void Dispose() {
+    platform_->Shutdown();
     delete platform_;
     platform_ = nullptr;
+    delete tracing_agent_;
+    tracing_agent_ = nullptr;
+  }
+
+  void DrainVMTasks() {
+    platform_->DrainBackgroundTasks();
   }
 
 #if HAVE_INSPECTOR
@@ -279,21 +292,19 @@ static struct {
 #endif  // HAVE_INSPECTOR
 
   void StartTracingAgent() {
-    CHECK(tracing_agent_ == nullptr);
-    tracing_agent_ = new tracing::Agent();
-    tracing_agent_->Start(platform_, trace_enabled_categories);
+    tracing_agent_->Start(trace_enabled_categories);
   }
 
   void StopTracingAgent() {
     tracing_agent_->Stop();
   }
 
-  v8::Platform* platform_;
   tracing::Agent* tracing_agent_;
+  NodePlatform* platform_;
 #else  // !NODE_USE_V8_PLATFORM
-  void Initialize(int thread_pool_size) {}
-  void PumpMessageLoop(Isolate* isolate) {}
+  void Initialize(int thread_pool_size, uv_loop_t* loop) {}
   void Dispose() {}
+  void DrainVMTasks() {}
   bool StartInspector(Environment *env, const char* script_path,
                       const node::DebugOptions& options) {
     env->ThrowError("Node compiled with NODE_USE_V8_PLATFORM=0");
@@ -1281,7 +1292,7 @@ void SetupPromises(const FunctionCallbackInfo<Value>& args) {
 
   env->process_object()->Delete(
       env->context(),
-      FIXED_ONE_BYTE_STRING(args.GetIsolate(), "_setupPromises")).FromJust();
+      FIXED_ONE_BYTE_STRING(isolate, "_setupPromises")).FromJust();
 }
 
 }  // anonymous namespace
@@ -1324,8 +1335,9 @@ MaybeLocal<Value> MakeCallback(Environment* env,
                                      asyncContext.trigger_async_id);
 
     if (asyncContext.async_id != 0) {
-      if (!AsyncWrap::EmitBefore(env, asyncContext.async_id))
-        return Local<Value>();
+      // No need to check a return value because the application will exit if
+      // an exception occurs.
+      AsyncWrap::EmitBefore(env, asyncContext.async_id);
     }
 
     ret = callback->Call(env->context(), recv, argc, argv);
@@ -1338,8 +1350,7 @@ MaybeLocal<Value> MakeCallback(Environment* env,
     }
 
     if (asyncContext.async_id != 0) {
-      if (!AsyncWrap::EmitAfter(env, asyncContext.async_id))
-        return Local<Value>();
+      AsyncWrap::EmitAfter(env, asyncContext.async_id);
     }
   }
 
@@ -3210,6 +3221,10 @@ void SetupProcessObject(Environment* env,
       "modules",
       FIXED_ONE_BYTE_STRING(env->isolate(), node_modules_version));
 
+  READONLY_PROPERTY(versions,
+                    "nghttp2",
+                    FIXED_ONE_BYTE_STRING(env->isolate(), NGHTTP2_VERSION));
+
   // process._promiseRejectEvent
   Local<Object> promiseRejectEvent = Object::New(env->isolate());
   READONLY_DONT_ENUM_PROPERTY(process,
@@ -3258,7 +3273,8 @@ void SetupProcessObject(Environment* env,
   // process.release
   Local<Object> release = Object::New(env->isolate());
   READONLY_PROPERTY(process, "release", release);
-  READONLY_PROPERTY(release, "name", OneByteString(env->isolate(), "node"));
+  READONLY_PROPERTY(release, "name",
+                    OneByteString(env->isolate(), NODE_RELEASE));
 
 // if this is a release build and no explicit base has been set
 // substitute the standard release download URL
@@ -3425,11 +3441,11 @@ void SetupProcessObject(Environment* env,
   // --security-revert flags
 #define V(code, _, __)                                                        \
   do {                                                                        \
-    if (IsReverted(REVERT_ ## code)) {                                        \
+    if (IsReverted(SECURITY_REVERT_ ## code)) {                               \
       READONLY_PROPERTY(process, "REVERT_" #code, True(env->isolate()));      \
     }                                                                         \
   } while (0);
-  REVERSIONS(V)
+  SECURITY_REVERSIONS(V)
 #undef V
 
   size_t exec_path_len = 2 * PATH_MAX;
@@ -3648,6 +3664,7 @@ static void PrintHelp() {
          "  --abort-on-uncaught-exception\n"
          "                             aborting instead of exiting causes a\n"
          "                             core file to be generated for analysis\n"
+         "  --expose-http2             enable experimental HTTP2 support\n"
          "  --trace-warnings           show stack traces on process warnings\n"
          "  --redirect-warnings=file\n"
          "                             write warnings to file instead of\n"
@@ -3712,6 +3729,7 @@ static void PrintHelp() {
          "NODE_NO_WARNINGS             set to 1 to silence process warnings\n"
 #if !defined(NODE_WITHOUT_NODE_OPTIONS)
          "NODE_OPTIONS                 set CLI options in the environment\n"
+         "                             via a space-separated list\n"
 #endif
 #ifdef _WIN32
          "NODE_PATH                    ';'-separated list of directories\n"
@@ -3768,6 +3786,7 @@ static void CheckIfAllowedInEnv(const char* exe, bool is_env,
     "--throw-deprecation",
     "--no-warnings",
     "--napi-modules",
+    "--expose-http2",
     "--trace-warnings",
     "--redirect-warnings",
     "--trace-sync-io",
@@ -3965,6 +3984,9 @@ static void ParseArgs(int* argc,
     } else if (strcmp(arg, "--expose-internals") == 0 ||
                strcmp(arg, "--expose_internals") == 0) {
       config_expose_internals = true;
+    } else if (strcmp(arg, "--expose-http2") == 0 ||
+               strcmp(arg, "--expose_http2") == 0) {
+      config_expose_http2 = true;
     } else if (strcmp(arg, "-") == 0) {
       break;
     } else if (strcmp(arg, "--") == 0) {
@@ -4538,21 +4560,18 @@ inline int Start(Isolate* isolate, IsolateData* isolate_data,
   {
     SealHandleScope seal(isolate);
     bool more;
+    PERFORMANCE_MARK(&env, LOOP_START);
     do {
-      v8_platform.PumpMessageLoop(isolate);
-      more = uv_run(env.event_loop(), UV_RUN_ONCE);
+      uv_run(env.event_loop(), UV_RUN_DEFAULT);
 
-      if (more == false) {
-        v8_platform.PumpMessageLoop(isolate);
-        EmitBeforeExit(&env);
+      EmitBeforeExit(&env);
 
-        // Emit `beforeExit` if the loop became alive either after emitting
-        // event, or after running some callbacks.
-        more = uv_loop_alive(env.event_loop());
-        if (uv_run(env.event_loop(), UV_RUN_NOWAIT) != 0)
-          more = true;
-      }
+      v8_platform.DrainVMTasks();
+      // Emit `beforeExit` if the loop became alive either after emitting
+      // event, or after running some callbacks.
+      more = uv_loop_alive(env.event_loop());
     } while (more == true);
+    PERFORMANCE_MARK(&env, LOOP_EXIT);
   }
 
   env.set_trace_sync_io(false);
@@ -4561,6 +4580,7 @@ inline int Start(Isolate* isolate, IsolateData* isolate_data,
   RunAtExit(&env);
   uv_key_delete(&thread_local_env);
 
+  v8_platform.DrainVMTasks();
   WaitForInspectorDisconnect(&env);
 #if defined(LEAK_SANITIZER)
   __lsan_do_leak_check();
@@ -4621,6 +4641,7 @@ inline int Start(uv_loop_t* event_loop,
 int Start(int argc, char** argv) {
   atexit([] () { uv_tty_reset_mode(); });
   PlatformInit();
+  node::performance::performance_node_start = PERFORMANCE_NOW();
 
   CHECK_GT(argc, 0);
 
@@ -4649,7 +4670,7 @@ int Start(int argc, char** argv) {
   V8::SetEntropySource(crypto::EntropySource);
 #endif  // HAVE_OPENSSL
 
-  v8_platform.Initialize(v8_thread_pool_size);
+  v8_platform.Initialize(v8_thread_pool_size, uv_default_loop());
   // Enable tracing when argv has --trace-events-enabled.
   if (trace_enabled) {
     fprintf(stderr, "Warning: Trace event is an experimental feature "
@@ -4657,6 +4678,7 @@ int Start(int argc, char** argv) {
     v8_platform.StartTracingAgent();
   }
   V8::Initialize();
+  node::performance::performance_v8_start = PERFORMANCE_NOW();
   v8_initialized = true;
   const int exit_code =
       Start(uv_default_loop(), argc, argv, exec_argc, exec_argv);
@@ -4666,6 +4688,12 @@ int Start(int argc, char** argv) {
   v8_initialized = false;
   V8::Dispose();
 
+  // uv_run cannot be called from the time before the beforeExit callback
+  // runs until the program exits unless the event loop has any referenced
+  // handles after beforeExit terminates. This prevents unrefed timers
+  // that happen to terminate during shutdown from being run unsafely.
+  // Since uv_run cannot be called, uv_async handles held by the platform
+  // will never be fully cleaned up.
   v8_platform.Dispose();
 
   delete[] exec_argv;

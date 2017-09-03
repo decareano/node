@@ -127,9 +127,18 @@ NAPI_EXTERN napi_status napi_create_array(napi_env env, napi_value* result);
 NAPI_EXTERN napi_status napi_create_array_with_length(napi_env env,
                                                       size_t length,
                                                       napi_value* result);
-NAPI_EXTERN napi_status napi_create_number(napi_env env,
+NAPI_EXTERN napi_status napi_create_double(napi_env env,
                                            double value,
                                            napi_value* result);
+NAPI_EXTERN napi_status napi_create_int32(napi_env env,
+                                          int32_t value,
+                                          napi_value* result);
+NAPI_EXTERN napi_status napi_create_uint32(napi_env env,
+                                           uint32_t value,
+                                           napi_value* result);
+NAPI_EXTERN napi_status napi_create_int64(napi_env env,
+                                          int64_t value,
+                                          napi_value* result);
 NAPI_EXTERN napi_status napi_create_string_latin1(napi_env env,
                                                   const char* str,
                                                   size_t length,
@@ -353,6 +362,9 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
 NAPI_EXTERN napi_status napi_unwrap(napi_env env,
                                     napi_value js_object,
                                     void** result);
+NAPI_EXTERN napi_status napi_remove_wrap(napi_env env,
+                                         napi_value js_object,
+                                         void** result);
 NAPI_EXTERN napi_status napi_create_external(napi_env env,
                                              void* data,
                                              napi_finalize finalize_cb,
@@ -494,6 +506,21 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
                                                  napi_value* arraybuffer,
                                                  size_t* byte_offset);
 
+NAPI_EXTERN napi_status napi_create_dataview(napi_env env,
+                                             size_t length,
+                                             napi_value arraybuffer,
+                                             size_t byte_offset,
+                                             napi_value* result);
+NAPI_EXTERN napi_status napi_is_dataview(napi_env env,
+                                         napi_value value,
+                                         bool* result);
+NAPI_EXTERN napi_status napi_get_dataview_info(napi_env env,
+                                               napi_value dataview,
+                                               size_t* bytelength,
+                                               void** data,
+                                               napi_value* arraybuffer,
+                                               size_t* byte_offset);
+
 // Methods to manage simple async operations
 NAPI_EXTERN
 napi_status napi_create_async_work(napi_env env,
@@ -511,6 +538,24 @@ NAPI_EXTERN napi_status napi_cancel_async_work(napi_env env,
 
 // version management
 NAPI_EXTERN napi_status napi_get_version(napi_env env, uint32_t* result);
+
+NAPI_EXTERN
+napi_status napi_get_node_version(napi_env env,
+                                  const napi_node_version** version);
+
+// Promises
+NAPI_EXTERN napi_status napi_create_promise(napi_env env,
+                                            napi_deferred* deferred,
+                                            napi_value* promise);
+NAPI_EXTERN napi_status napi_resolve_deferred(napi_env env,
+                                              napi_deferred deferred,
+                                              napi_value resolution);
+NAPI_EXTERN napi_status napi_reject_deferred(napi_env env,
+                                             napi_deferred deferred,
+                                             napi_value rejection);
+NAPI_EXTERN napi_status napi_is_promise(napi_env env,
+                                        napi_value promise,
+                                        bool* is_promise);
 
 EXTERN_C_END
 

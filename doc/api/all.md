@@ -19,6 +19,7 @@
 @include fs
 @include globals
 @include http
+@include http2
 @include https
 @include inspector
 @include intl
@@ -26,6 +27,7 @@
 @include net
 @include os
 @include path
+@include perf_hooks
 @include process
 @include punycode
 @include querystring

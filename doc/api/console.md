@@ -1,5 +1,7 @@
 # Console
 
+<!--introduced_in=v0.10.13-->
+
 > Stability: 2 - Stable
 
 The `console` module provides a simple debugging console that is similar to the
@@ -167,6 +169,75 @@ console.assert(false, 'this message will print, but no error thrown');
 console.log('this will also print');
 ```
 
+### console.clear()
+<!-- YAML
+added: v8.3.0
+-->
+
+When `stdout` is a TTY, calling `console.clear()` will attempt to clear the
+TTY. When `stdout` is not a TTY, this method does nothing.
+
+*Note*: The specific operation of `console.clear()` can vary across operating
+systems and terminal types. For most Linux operating systems, `console.clear()`
+operates similarly to the `clear` shell command. On Windows, `console.clear()`
+will clear only the output in the current terminal viewport for the Node.js
+binary.
+
+### console.count([label])
+<!-- YAML
+added: v8.3.0
+-->
+
+* `label` {string} The display label for the counter. Defaults to `'default'`.
+
+Maintains an internal counter specific to `label` and outputs to `stdout` the
+number of times `console.count()` has been called with the given `label`.
+
+<!-- eslint-skip -->
+```js
+> console.count()
+default: 1
+undefined
+> console.count('default')
+default: 2
+undefined
+> console.count('abc')
+abc: 1
+undefined
+> console.count('xyz')
+xyz: 1
+undefined
+> console.count('abc')
+abc: 2
+undefined
+> console.count()
+default: 3
+undefined
+>
+```
+
+### console.countReset([label = 'default'])
+<!-- YAML
+added: v8.3.0
+-->
+
+* `label` {string} The display label for the counter. Defaults to `'default'`.
+
+Resets the internal counter specific to `label`.
+
+<!-- eslint-skip -->
+```js
+> console.count('abc');
+abc: 1
+undefined
+> console.countReset('abc');
+undefined
+> console.count('abc');
+abc: 1
+undefined
+>
+```
+
 ### console.dir(obj[, options])
 <!-- YAML
 added: v0.1.101
@@ -217,6 +288,32 @@ If formatting elements (e.g. `%d`) are not found in the first string then
 [`util.inspect()`][] is called on each argument and the resulting string
 values are concatenated. See [`util.format()`][] for more information.
 
+### console.group([...label])
+<!-- YAML
+added: REPLACEME
+-->
+
+* `label` {any}
+
+Increases indentation of subsequent lines by two spaces.
+
+If one or more `label`s are provided, those are printed first without the
+additional indentation.
+
+### console.groupCollapsed()
+<!-- YAML
+  added: REPLACEME
+-->
+
+An alias for [`console.group()`][].
+
+### console.groupEnd()
+<!-- YAML
+added: REPLACEME
+-->
+
+Decreases indentation of subsequent lines by two spaces.
+
 ### console.info([data][, ...args])
 <!-- YAML
 added: v0.1.100
@@ -252,7 +349,7 @@ See [`util.format()`][] for more information.
 <!-- YAML
 added: v0.1.104
 -->
-* `label` {string}
+* `label` {string} Defaults to `'default'`.
 
 Starts a timer that can be used to compute the duration of an operation. Timers
 are identified by a unique `label`. Use the same `label` when calling
@@ -268,7 +365,7 @@ changes:
     description: This method no longer supports multiple calls that don’t map
                  to individual `console.time()` calls; see below for details.
 -->
-* `label` {string}
+* `label` {string} Defaults to `'default'`.
 
 Stops a timer that was previously started by calling [`console.time()`][] and
 prints the result to `stdout`:
@@ -321,6 +418,7 @@ added: v0.1.100
 The `console.warn()` function is an alias for [`console.error()`][].
 
 [`console.error()`]: #console_console_error_data_args
+[`console.group()`]: #console_console_group_label
 [`console.log()`]: #console_console_log_data_args
 [`console.time()`]: #console_console_time_label
 [`console.timeEnd()`]: #console_console_timeend_label

@@ -1,5 +1,6 @@
 # Process
 
+<!-- introduced_in=v0.10.0 -->
 <!-- type=global -->
 
 The `process` object is a `global` that provides information about, and control
@@ -1819,6 +1820,8 @@ cases:
   value of the signal code.  This is a standard Unix practice, since
   exit codes are defined to be 7-bit integers, and signal exits set
   the high-order bit, and then contain the value of the signal code.
+  For example, signal `SIGABRT` has value `6`, so the expected exit
+  code will be `128` + `6`, or `134`.
 
 
 [`'exit'`]: #process_event_exit
@@ -1850,11 +1853,11 @@ cases:
 [Cluster]: cluster.html
 [Duplex]: stream.html#stream_duplex_and_transform_streams
 [LTS]: https://github.com/nodejs/LTS/
+[note on process I/O]: process.html#process_a_note_on_process_i_o
+[process_emit_warning]: #process_process_emitwarning_warning_type_code_ctor
+[process_warning]: #process_event_warning
 [Readable]: stream.html#stream_readable_streams
 [Signal Events]: #process_signal_events
 [Stream compatibility]: stream.html#stream_compatibility_with_older_node_js_versions
 [TTY]: tty.html#tty_tty
 [Writable]: stream.html#stream_writable_streams
-[note on process I/O]: process.html#process_a_note_on_process_i_o
-[process_emit_warning]: #process_process_emitwarning_warning_type_code_ctor
-[process_warning]: #process_event_warning

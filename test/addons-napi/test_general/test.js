@@ -1,4 +1,5 @@
 'use strict';
+// Flags: --expose-gc
 
 const common = require('../../common');
 const test_general = require(`./build/${common.buildType}/test_general`);
@@ -35,6 +36,11 @@ assert.ok(test_general.testGetPrototype(baseObject) !==
 // expected version is currently 1
 assert.strictEqual(test_general.testGetVersion(), 1);
 
+const [ major, minor, patch, release ] = test_general.testGetNodeVersion();
+assert.strictEqual(process.version.split('-')[0],
+                   `v${major}.${minor}.${patch}`);
+assert.strictEqual(release, process.release.name);
+
 [
   123,
   'test string',
@@ -51,10 +57,37 @@ assert.strictEqual(test_general.testGetVersion(), 1);
 // for null
 assert.strictEqual(test_general.testNapiTypeof(null), 'null');
 
-const x = {};
+// Ensure that garbage collecting an object with a wrapped native item results
+// in the finalize callback being called.
+let w = {};
+test_general.wrap(w, []);
+w = null;
+global.gc();
+assert.strictEqual(test_general.derefItemWasCalled(), true,
+                   'deref_item() was called upon garbage collecting a ' +
+                   'wrapped object');
 
 // Assert that wrapping twice fails.
+const x = {};
 test_general.wrap(x, 25);
 assert.throws(function() {
   test_general.wrap(x, 'Blah');
 }, Error);
+
+// Ensure that wrapping, removing the wrap, and then wrapping again works.
+const y = {};
+test_general.wrap(y, -12);
+test_general.removeWrap(y);
+assert.doesNotThrow(function() {
+  test_general.wrap(y, 're-wrap!');
+}, Error, 'Wrapping twice succeeds if a remove_wrap() separates the instances');
+
+// Ensure that removing a wrap and garbage collecting does not fire the
+// finalize callback.
+let z = {};
+test_general.testFinalizeWrap(z);
+test_general.removeWrap(z);
+z = null;
+global.gc();
+assert.strictEqual(test_general.finalizeWasCalled(), false,
+                   'finalize callback was not called upon garbage collection');

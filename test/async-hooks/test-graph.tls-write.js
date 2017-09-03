@@ -9,8 +9,8 @@ if (!common.hasIPv6)
 
 const initHooks = require('./init-hooks');
 const verifyGraph = require('./verify-graph');
-const fs = require('fs');
 const tls = require('tls');
+const fixtures = require('../common/fixtures');
 
 const hooks = initHooks();
 hooks.enable();
@@ -20,8 +20,8 @@ hooks.enable();
 //
 const server = tls
   .createServer({
-    cert: fs.readFileSync(common.fixturesDir + '/test_cert.pem'),
-    key: fs.readFileSync(common.fixturesDir + '/test_key.pem')
+    cert: fixtures.readSync('test_cert.pem'),
+    key: fixtures.readSync('test_key.pem')
   })
   .on('listening', common.mustCall(onlistening))
   .on('secureConnection', common.mustCall(onsecureConnection))

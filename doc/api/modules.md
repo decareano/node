@@ -1,5 +1,7 @@
 # Modules
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 <!--name=module-->
@@ -767,6 +769,15 @@ added: v0.1.16
 * {Object} Module object
 
 The module that first required this one.
+
+### module.paths
+<!-- YAML
+added: v0.4.0
+-->
+
+* {string[]}
+
+The search paths for the module.
 
 ### module.require(id)
 <!-- YAML

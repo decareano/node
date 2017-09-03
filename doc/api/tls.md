@@ -1,5 +1,7 @@
 # TLS (SSL)
 
+<!--introduced_in=v0.10.0-->
+
 > Stability: 2 - Stable
 
 The `tls` module provides an implementation of the Transport Layer Security
@@ -551,6 +553,14 @@ added: v0.11.4
 
 Returns `true` if the peer certificate was signed by one of the CAs specified
 when creating the `tls.TLSSocket` instance, otherwise `false`.
+
+### tlsSocket.disableRenegotiation()
+<!-- YAML
+added: v8.4.0
+-->
+
+Disables TLS renegotiation for this `TLSSocket` instance. Once called, attempts
+to renegotiate will trigger an `'error'` event on the `TLSSocket`.
 
 ### tlsSocket.encrypted
 <!-- YAML
