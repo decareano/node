@@ -7,7 +7,6 @@ const { runInNewContext } = require('vm');
 const assert = require('assert');
 
 const checkString = 'test';
-
 const check = Buffer.from(checkString);
 
 class MyString extends String {
@@ -30,14 +29,12 @@ class MyBadPrimitive {
 }
 
 
-deepStrictEqual(Buffer.from(new String(checkString)), check);
-deepStrictEqual(Buffer.from(new MyString()), check);
-deepStrictEqual(Buffer.from(new MyPrimitive()), check);
-deepStrictEqual(
-  Buffer.from(runInNewContext('new String(checkString)', { checkString })),
-  check
-);
-
+assert.deepStrictEqual(Buffer.from(new String(checkString)), check);
+assert.deepStrictEqual(Buffer.from(new MyString()), check);
+assert.deepStrictEqual(Buffer.from(new MyPrimitive()), check);
+assert.deepStrictEqual(Buffer.from(
+                  runInNewContext('new String(checkString)', {checkString})),
+                check);
 [
   [{}, 'object'],
   [new Boolean(true), 'boolean'],
@@ -56,15 +53,3 @@ deepStrictEqual(
   throws(() => Buffer.from(input), err);
 });
 
-// [
-//   new Number(true),
-//   new MyBadPrimitive()
-// ].forEach((input) => {
-//   const errMsg = common.expectsError({
-//     code: 'ERR_INVALID_ARG_TYPE',
-//     type: TypeError,
-//     message: 'The "value" argument must not be of type number. ' +
-//              'Received type number'
-//   });
-//   throws(() => Buffer.from(input), errMsg);
-// });
