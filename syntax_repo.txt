@@ -1,0 +1,37 @@
+run `git fetch`
+11:33 AM `git checkout test-buffer-edit+
+
+./node tools/eslint/bin/eslint.js --rulesdir=tools/eslint-rules --fix lib/buffer.js
+
+node benchmark/buffers/buffer-from.js
+./node test/parallel/test-buffer-from.js
+debugger;Buffer.from(new Uint8Array([0x74, 0x65, 0x73, 0x74]));
+
+
+# Pastebin TyYDdZcH
+if (typeof value[Symbol.toPrimitive] === 'function') {
+    return Buffer.from(value[Symbol.toPrimitive]('string'), encodingOrOffset, length);
+}
+
+=>
+
+Buffer.from(value[Symbol.toPrimitive]('string'), encodingOrOffset, length);
+
+=>
+
+Buffer.from(someFunc('string'), encodingOrOffset, length);
+
+=>
+
+Buffer.from('test', 'utf-8', undefined)
+
+=>
+
+Buffer([0x74, 0x65, 0x73, 0x74])
+
+buffer file: inline for resume
+
+performance was bad
+function call was only used once.
+opportunity for refactoring
+inline function in place of function call.
